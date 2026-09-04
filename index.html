@@ -1,0 +1,1434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<title>YouTube Mobile UI — Passive Hustler</title>
+<style>
+:root{--bg:#0F0F0F;--text:#F1F1F1;--muted:#AAAAAA;--red:#FF0033;--chip:#272727;--inset:20px;--header-h:76px;--chips-h:72px;--chip-h:50px;--nav-h:96px;--short-gap:8px}
+*{margin:0;padding:0;box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased;scrollbar-width:none}
+html::-webkit-scrollbar,body::-webkit-scrollbar,.category-scroller::-webkit-scrollbar{width:0;height:0;display:none}
+body{width:100%;max-width:691px;min-height:100vh;margin:0 auto;overflow-x:hidden;overflow-y:auto;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;padding-bottom:calc(72px + 3px);scrollbar-width:none;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;cursor:pointer}
+
+/* Header */
+.top-header{height:72px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;background:var(--bg)}
+.youtube-logo{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.yt-play-mark{width:46px;height:33px;display:block}
+.yt-wordmark{font-family:Arial,Helvetica,sans-serif;font-size:26px;font-weight:700;line-height:1;letter-spacing:-1px;white-space:nowrap}
+.header-icons{display:flex;align-items:center;gap:12px}
+.header-icon-btn{width:36px;height:36px;border:0;background:transparent;display:flex;align-items:center;justify-content:center;padding:0}
+.header-icon-btn svg{width:30px;height:30px;display:block}
+
+/* Category chips */
+.category-scroller{height:76px;display:flex;align-items:center;gap:10px;padding-left:20px;padding-right:0;overflow-x:auto;overflow-y:hidden;white-space:nowrap;scrollbar-width:none;-ms-overflow-style:none}
+.explore-btn{width:62px;height:var(--chip-h);flex:0 0 auto;border:0;border-radius:9px;background:#242424;display:flex;align-items:center;justify-content:center;padding:0}
+.explore-btn svg{width:29px;height:29px}
+.chip{height:42px;flex:0 0 auto;padding:0 13px;border:0;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;font-size:15px;font-weight:400}
+.chip-all{padding:0 16px;background:#F1F1F1;color:#181818;font-weight:500}
+.chip-unselected{background:var(--chip);color:#E5E5E5}
+
+/* Video player */
+.main-video{width:100%;aspect-ratio:16/9;position:relative;overflow:hidden;background:#1A1A1A}
+.main-video video{width:100%;height:100%;display:block;object-fit:cover;background:#1A1A1A}
+.main-video img[src=""],.main-video img:not([src]){visibility:hidden}
+.video-overlays{position:absolute;inset:0;z-index:2;pointer-events:none}
+.video-overlays>*{pointer-events:auto}
+/* Reference-matched player control buttons: 77px circles, 15px right inset */
+.mute-icon{position:absolute;top:15px;right:15px;width:72px;height:72px;opacity:1;background:#3A3A3A;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.mute-icon svg{width:45px;height:46px;display:block}
+.cc-control{position:absolute;top:104px;right:15px;width:72px;height:72px;display:flex;align-items:center;justify-content:center;background:#3A3A3A;color:#181818;border-radius:50%;font-size:0;font-weight:750;letter-spacing:.4px;line-height:1}
+.cc-control::before{content:"CC";display:flex;align-items:center;justify-content:center;width:40px;height:32px;background:#F1F1F1;color:#666;border-radius:4px;font-size:13px;font-weight:750;letter-spacing:1px;line-height:1}
+.subtitle-overlay{position:absolute;left:50%;bottom:30px;transform:translateX(-50%);padding:5px 14px 6px;background:rgba(0,0,0,.82);border-radius:4px;color:#fff;font-size:16px;font-weight:500;line-height:22px;white-space:nowrap}
+.duration-indicator{position:absolute;right:10px;bottom:14px;padding:5px 7px;background:rgba(0,0,0,.84);border-radius:4px;color:#fff;font-size:12px;font-weight:400;line-height:1;letter-spacing:.2px}
+.progress-container{position:absolute;left:0;right:0;bottom:0;height:19px;display:flex;align-items:flex-end;z-index:3}
+.progress-track{width:100%;height:4px;position:relative;background:rgba(255,255,255,.22)}
+.progress-active{width:0%;height:100%;position:relative;background:var(--red)}
+.progress-knob{position:absolute;top:50%;right:-7px;width:14px;height:14px;transform:translateY(-50%);background:var(--red);border-radius:50%}
+
+/* Video metadata */
+.video-meta{display:flex;align-items:flex-start;gap:10px;padding:12px 20px 0;position:relative}
+.channel-avatar{width:44px;height:44px;flex:0 0 44px;border-radius:50%;overflow:hidden;background:#3A3A3A}
+.channel-avatar img{width:100%;height:100%;display:block;object-fit:cover;background:#3A3A3A}
+.meta-text{min-width:0;flex:1;padding-right:26px}
+.video-title{font-size:15px;line-height:19px;font-weight:400;color:var(--text);display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.video-secondary{font-size:12px;line-height:16px;margin-top:3px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meta-overflow,.shorts-overflow{width:24px;height:24px;border:0;background:transparent;padding:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;opacity:.95}
+.meta-overflow{position:absolute;right:15px;top:14px}
+.meta-overflow span,.shorts-overflow span{width:4px;height:4px;background:#F1F1F1;border-radius:50%;display:block}
+
+/* Shorts */
+.shorts-section{padding-top:30px}
+.shorts-header{height:44px;display:flex;align-items:center;padding:0 20px;gap:11px;position:relative}
+.shorts-icon{width:32px;height:32px;display:flex;align-items:center;justify-content:center;flex:0 0 32px}
+.shorts-icon svg{width:32px;height:32px;display:block}
+.shorts-title{font-family:Arial,Helvetica,sans-serif;font-size:20px;font-weight:700;line-height:1;letter-spacing:-.2px}
+.shorts-overflow{position:absolute;right:15px;top:50%;transform:translateY(-50%)}
+.shorts-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:4px 20px 0}
+.short-card{aspect-ratio:9/16;position:relative;overflow:hidden;border-radius:8px;background:#1A1A1A}
+.short-card img{position:absolute;inset:0;width:100%;height:100%;display:block;object-fit:cover;background:#1A1A1A}
+.short-card-placeholder{position:absolute;inset:0;background:#181818}
+.short-card-overlay{position:absolute;inset:0;z-index:2}
+.short-card-text{position:absolute;left:10px;right:30px;bottom:10px;font-size:13px;font-weight:400;color:#fff;line-height:17px;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;text-shadow:0 1px 3px rgba(0,0,0,.65)}
+.short-card-more{position:absolute;right:7px;top:7px;width:24px;height:24px;border:0;background:rgba(0,0,0,.35);border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.short-card-more span{width:3px;height:3px;background:#fff;border-radius:50%}
+.short-play{position:absolute;left:50%;top:50%;width:34px;height:34px;transform:translate(-50%,-50%);border:0;background:transparent;border-radius:0;display:flex;align-items:center;justify-content:center;box-shadow:none}
+.short-play svg{width:19px;height:19px;margin-left:2px}
+.short-play svg path{stroke:none}.short-play svg .shorts-body{fill:#F1F1F1 !important}.short-play svg .shorts-play{fill:#0F0F0F !important}
+
+/* ============================================================
+   PROFILE / YOU SCREEN
+   Device status bar is intentionally excluded.
+   ============================================================ */
+.profile-screen{
+  display:none;
+  min-height:calc(100vh - 72px);
+  padding:8px 0 112px;
+  background:var(--bg);
+  color:var(--text);
+  overflow-x:hidden;
+}
+
+body.profile-mode > .profile-screen{
+  display:block;
+}
+
+body.profile-mode > .top-header,
+body.profile-mode > .category-scroller,
+body.profile-mode > .main-video,
+body.profile-mode > .video-meta,
+body.profile-mode > .shorts-section{
+  display:none;
+}
+
+/* Profile header */
+.profile-toolbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 22px;
+  margin-bottom:24px;
+}
+
+.profile-account-btn{
+  height:50px;
+  min-width:236px;
+  padding:0 22px;
+  border:1px solid #3A3A3A;
+  border-radius:28px;
+  background:transparent;
+  color:#F1F1F1;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  font-size:21px;
+  font-weight:400;
+}
+
+.profile-account-chevron{
+  width:16px;
+  height:16px;
+  border-right:2px solid #F1F1F1;
+  border-bottom:2px solid #F1F1F1;
+  transform:rotate(45deg) translateY(-3px);
+}
+
+.profile-toolbar-actions{
+  display:flex;
+  align-items:center;
+  gap:24px;
+}
+
+.profile-toolbar-btn{
+  width:42px;
+  height:42px;
+  border:0;
+  background:transparent;
+  padding:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.profile-toolbar-btn svg{
+  width:31px;
+  height:31px;
+  display:block;
+}
+
+.profile-summary{
+  display:flex;
+  align-items:center;
+  gap:24px;
+  padding:0 24px;
+  margin-bottom:64px;
+}
+
+.profile-avatar-large{
+  width:138px;
+  height:138px;
+  flex:0 0 138px;
+  border-radius:50%;
+  overflow:hidden;
+  background:#333;
+  border:1px solid #494949;
+}
+
+.profile-avatar-large img{
+  width:100%;
+  height:100%;
+  display:block;
+  object-fit:cover;
+}
+
+.profile-summary-text{
+  min-width:0;
+  padding-bottom:3px;
+}
+
+.profile-name{
+  max-width:470px;
+  font-size:34px;
+  line-height:1.06;
+  font-weight:700;
+  letter-spacing:-.6px;
+}
+
+.profile-handle{
+  margin-top:10px;
+  font-size:17px;
+  line-height:1.2;
+  color:#C4C4C4;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.profile-dot{
+  display:inline-block;
+  margin:0 9px;
+  color:#BEBEBE;
+}
+
+.profile-chevron-inline{
+  display:inline-block;
+  width:11px;
+  height:11px;
+  margin-left:8px;
+  border-top:2px solid #D7D7D7;
+  border-right:2px solid #D7D7D7;
+  transform:rotate(45deg) translateY(-1px);
+}
+
+/* Section headers */
+.profile-section{
+  margin-bottom:66px;
+}
+
+.profile-section-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 31px;
+  margin-bottom:34px;
+}
+
+.profile-section-title{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  font-size:28px;
+  line-height:1;
+  font-weight:700;
+  letter-spacing:-.4px;
+}
+
+.profile-title-chevron{
+  width:14px;
+  height:14px;
+  border-top:3px solid #F1F1F1;
+  border-right:3px solid #F1F1F1;
+  transform:rotate(45deg);
+}
+
+.profile-section-action{
+  width:46px;
+  height:46px;
+  border:0;
+  background:transparent;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.profile-section-action::before,
+.profile-section-action::after{
+  content:"";
+  position:absolute;
+  width:36px;
+  height:3px;
+  border-radius:2px;
+  background:#F1F1F1;
+}
+
+.profile-section-action::after{ transform:rotate(90deg); }
+
+/* History */
+.profile-history{
+  display:flex;
+  gap:30px;
+  overflow-x:auto;
+  padding:0 31px;
+  scrollbar-width:none;
+}
+
+.profile-history::-webkit-scrollbar{display:none}
+
+.history-card{
+  width:276px;
+  flex:0 0 276px;
+}
+
+.history-thumb{
+  position:relative;
+  width:100%;
+  height:157px;
+  border-radius:13px;
+  overflow:hidden;
+  background:#242424;
+}
+
+.history-thumb img{
+  width:100%;
+  height:100%;
+  display:block;
+  object-fit:cover;
+}
+
+.history-progress{
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:0;
+  height:6px;
+  background:rgba(255,255,255,.38);
+}
+
+.history-progress::before{
+  content:"";
+  position:absolute;
+  left:0;
+  top:0;
+  bottom:0;
+  width:100%;
+  background:var(--red);
+}
+
+.history-duration{
+  position:absolute;
+  right:8px;
+  bottom:7px;
+  padding:3px 5px;
+  border-radius:4px;
+  background:rgba(0,0,0,.75);
+  color:#fff;
+  font-size:12px;
+  line-height:1;
+}
+
+.history-title{
+  margin-top:12px;
+  font-size:18px;
+  line-height:1.15;
+  display:-webkit-box;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:2;
+  overflow:hidden;
+}
+
+.history-meta{
+  margin-top:8px;
+  color:#AFAFAF;
+  font-size:15px;
+  line-height:1.2;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* Playlists */
+.profile-playlists{
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0, 1fr));
+  gap:30px;
+  padding:0 31px;
+}
+
+.playlist-card{
+  min-width:0;
+}
+
+.playlist-thumb{
+  position:relative;
+  height:170px;
+  border-radius:14px;
+  overflow:hidden;
+  background:#2A2A2A;
+}
+
+.playlist-thumb img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+  opacity:.5;
+}
+
+.playlist-thumb::before{
+  content:"";
+  position:absolute;
+  left:11px;
+  right:11px;
+  top:-7px;
+  height:8px;
+  border-radius:8px 8px 0 0;
+  background:#9A9A9A;
+}
+
+.playlist-count{
+  position:absolute;
+  inset:0;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  color:#F1F1F1;
+  text-align:center;
+}
+
+.playlist-count svg{
+  width:44px;
+  height:44px;
+}
+
+.playlist-count-number{
+  font-size:17px;
+  line-height:1;
+}
+
+.playlist-title{
+  margin-top:13px;
+  font-size:19px;
+  line-height:1.1;
+}
+
+.playlist-privacy{
+  margin-top:6px;
+  color:#AFAFAF;
+  font-size:15px;
+  line-height:1.1;
+}
+
+/* Utility rows */
+.profile-links{
+  padding:0 31px;
+  margin-top:-12px;
+}
+
+.profile-link{
+  min-height:84px;
+  display:flex;
+  align-items:center;
+  gap:38px;
+  color:#F1F1F1;
+}
+
+.profile-link-icon{
+  width:44px;
+  height:44px;
+  flex:0 0 44px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.profile-link-icon svg{
+  width:38px;
+  height:38px;
+  display:block;
+}
+
+.profile-link-label{
+  font-size:22px;
+  line-height:1.1;
+}
+
+/* You tab selected state */
+body.profile-mode .nav-item.home-active::before{
+  display:none;
+}
+
+body.profile-mode .nav-item[aria-label="You"] .nav-profile-avatar{
+  border:2px solid #F1F1F1;
+}
+
+@media(max-width:430px){
+  .profile-screen{
+    min-height:calc(100vh - 72px);
+    padding:8px 0 72px;
+  }
+
+  .profile-toolbar{
+    padding:0 23px;
+    margin-bottom:30px;
+  }
+
+  .profile-account-btn{
+    height:50px;
+    min-width:236px;
+    padding:0 21px;
+    font-size:21px;
+  }
+
+  .profile-toolbar-actions{
+    gap:17px;
+  }
+
+  .profile-toolbar-btn{
+    width:38px;
+    height:38px;
+  }
+
+  .profile-toolbar-btn svg{
+    width:30px;
+    height:30px;
+  }
+
+  .profile-summary{
+    gap:22px;
+    padding:0 24px;
+    margin-bottom:64px;
+  }
+
+  .profile-avatar-large{
+    width:138px;
+    height:138px;
+    flex-basis:138px;
+  }
+
+  .profile-name{
+    font-size:31px;
+    line-height:1.06;
+  }
+
+  .profile-handle{
+    margin-top:9px;
+    font-size:16px;
+  }
+
+  .profile-section{
+    margin-bottom:64px;
+  }
+
+  .profile-section-header{
+    padding:0 31px;
+    margin-bottom:36px;
+  }
+
+  .profile-section-title{
+    font-size:28px;
+  }
+
+  .profile-history{
+    gap:30px;
+    padding:0 31px;
+  }
+
+  .history-card{
+    width:276px;
+    flex-basis:276px;
+  }
+
+  .history-thumb{
+    height:157px;
+  }
+
+  .history-title{
+    font-size:18px;
+  }
+
+  .profile-playlists{
+    gap:30px;
+    padding:0 31px;
+  }
+
+  .playlist-thumb{
+    height:165px;
+  }
+
+  .playlist-title{
+    font-size:19px;
+  }
+
+  .profile-links{
+    padding:0 31px;
+    margin-top:-10px;
+  }
+
+  .profile-link{
+    min-height:100px;
+    gap:36px;
+  }
+
+  .profile-link-label{
+    font-size:22px;
+  }
+}
+
+/* Reference-only placeholders: preserve profile geometry without reference-specific assets/content. */
+.profile-text-placeholder{color:#9A9A9A !important}
+.profile-avatar-placeholder{
+  width:100%;
+  height:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#303030;
+  color:#777;
+  font-size:13px;
+  font-weight:600;
+  letter-spacing:.8px;
+}
+.profile-media-placeholder{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+  background:#242424;
+  color:#777;
+  font-size:12px;
+  font-weight:600;
+  letter-spacing:.8px;
+}
+.profile-media-placeholder::before{
+  content:"";
+  position:absolute;
+  left:11px;
+  right:11px;
+  top:-7px;
+  height:8px;
+  border-radius:8px 8px 0 0;
+  background:#777;
+}
+@media(max-width:430px){
+  .profile-avatar-placeholder{font-size:12px}
+  .profile-media-placeholder{font-size:11px}
+}
+
+/* Bottom navigation */
+.bottom-navigation{position:fixed;left:0;right:0;bottom:0;height:112px;width:100%;max-width:691px;margin:0 auto;background:var(--bg);border-top:1px solid #202020;z-index:100;padding-bottom:18px}
+.nav-items{height:100%;display:flex;align-items:stretch}
+.nav-item{flex:1;min-width:0;border:0;background:transparent;padding:8px 0 0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:4px}
+.nav-item{text-decoration:none;color:inherit}
+.nav-item.home-active{position:relative}
+.nav-item.home-active::before{content:"";position:absolute;top:0;left:50%;width:86px;height:86px;transform:translateX(-50%);border-radius:50%;background:#050505;z-index:0}
+.nav-item.home-active>*{position:relative;z-index:1}
+.nav-icon{width:25px;height:25px;flex:0 0 25px;display:flex;align-items:center;justify-content:center}
+.nav-icon svg{width:100%;height:100%;display:block}
+.nav-item:nth-child(1) .nav-icon{width:42px;height:40px;flex-basis:42px}
+.nav-item:nth-child(1) .nav-icon svg{width:42px;height:40px}
+.nav-item:nth-child(4) .nav-icon{width:42px;height:40px;flex-basis:42px}
+.nav-item:nth-child(4) .nav-icon svg{width:42px;height:40px}
+.home-icon-wrap{position:relative}
+.home-icon-wrap .home-return-mark{position:absolute;left:50%;top:50%;width:24px;height:24px;transform:translate(-50%,-4%)}
+.nav-label{font-size:11px;font-weight:400;line-height:1.05;color:#F1F1F1;white-space:nowrap}
+.nav-create-circle{width:48px;height:48px;flex:0 0 48px;margin-top:-6px;background:#2D2D2D;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.nav-create-circle svg{width:23px;height:23px;display:block}
+.nav-profile-avatar{width:30px;height:30px;flex:0 0 30px;margin-top:1px;border-radius:50%;overflow:hidden;background:#4A4A4A}
+.nav-profile-avatar img{width:100%;height:100%;display:block;object-fit:cover;background:#4A4A4A}
+
+@media(min-width:401px){
+  :root{--inset:20px;--header-h:72px;--chips-h:76px;--chip-h:50px;--nav-h:112px;--short-gap:10px}
+  .video-meta{gap:12px;padding-top:14px}.channel-avatar{width:52px;height:52px;flex-basis:52px}.meta-text{padding-right:30px}.video-title{font-size:17px;line-height:22px}.video-secondary{font-size:13px;line-height:18px}.shorts-section{padding-top:31px}.shorts-header{height:46px;gap:13px}.shorts-icon{width:36px;height:36px;flex-basis:36px}.shorts-icon svg{width:36px;height:36px}.shorts-title{font-size:23px;font-weight:700;font-family:Arial,Helvetica,sans-serif}.shorts-grid{padding-top:4px}.short-card-text{font-size:15px;line-height:20px}.nav-icon{width:30px;height:30px;flex-basis:30px}.nav-label{font-size:12px}.nav-create-circle{width:54px;height:54px;flex-basis:54px;margin-top:-8px}.nav-profile-avatar{width:34px;height:34px;flex-basis:34px}
+}
+/* Phone-sized category sizing: match the lighter reference proportions */
+@media(max-width:430px){
+  /* Phone profile: reference-fit proportions. SVG paths/colors remain unchanged. */
+  :root{--inset:20px;--header-h:48px;--chips-h:56px;--chip-h:36px;--nav-h:72px;--short-gap:10px}
+
+  .top-header{height:48px;padding:0 18px}
+  .youtube-logo{gap:4px}
+  .yt-play-mark{width:32px;height:23px}
+  .yt-wordmark{font-size:21px;letter-spacing:-.7px}
+  .header-icons{gap:7px}
+  .header-icon-btn{width:30px;height:30px}
+  .header-icon-btn svg{width:22px;height:22px}
+
+  .category-scroller{height:56px;gap:8px;padding-left:20px}
+  .explore-btn{width:46px;height:36px;border-radius:8px}
+  .explore-btn svg{width:23px;height:23px}
+  .chip{height:36px;font-size:14px;padding:0 12px;border-radius:9px}
+  .chip-all{padding:0 14px}
+
+  .mute-icon{top:8px;right:10px;width:30px;height:30px;background:transparent;border-radius:0}
+  .mute-icon svg{width:22px;height:23px}
+  .cc-control{top:48px;right:10px;width:30px;height:30px;background:transparent;border-radius:0}
+  .cc-control::before{width:24px;height:20px;font-size:10px;border-radius:3px}
+
+  .video-meta{gap:10px;padding:10px 20px 0}
+  .channel-avatar{width:40px;height:40px;flex-basis:40px}
+  .meta-text{padding-right:22px}
+  .video-title{font-size:15px;line-height:19px}
+  .video-secondary{font-size:12px;line-height:16px;margin-top:2px}
+  .shorts-section{padding-top:29px}
+  .shorts-header{height:40px;padding:0 20px;gap:10px}
+  .shorts-icon{width:30px;height:30px;flex-basis:30px}
+  .shorts-icon svg{width:30px;height:30px}
+  .shorts-title{font-size:20px;line-height:1}
+  .shorts-overflow{right:15px}
+  .shorts-grid{gap:10px;padding:4px 20px 0}
+
+  .bottom-navigation{height:72px;padding-bottom:0}
+  .nav-item{padding:4px 0 0;gap:3px}
+  .nav-item.home-active::before{top:-1px;width:50px;height:50px}
+  .nav-icon{width:26px;height:26px;flex-basis:26px}
+  .nav-icon svg{width:26px;height:26px}
+  .nav-item:nth-child(1) .nav-icon{width:26px;height:26px;flex-basis:26px}
+  .nav-item:nth-child(1) .nav-icon svg{width:26px;height:26px}
+  .nav-item:nth-child(4) .nav-icon{width:26px;height:26px;flex-basis:26px}
+  .nav-item:nth-child(4) .nav-icon svg{width:26px;height:26px}
+  .nav-label{font-size:11px;line-height:1.05}
+  .nav-create-circle{width:38px;height:38px;flex-basis:38px;margin-top:-1px}
+  .nav-create-circle svg{width:20px;height:20px}
+  .nav-profile-avatar{width:22px;height:22px;flex-basis:22px;margin-top:0}
+
+  /* Stroke weight only; icon geometry and colors remain unchanged. */
+  .nav-item:nth-child(1) .nav-icon svg path{stroke-width:3.2}
+  .nav-item:nth-child(2) .nav-icon svg path:first-child{stroke-width:2.4}
+  .nav-item:nth-child(4) .nav-icon svg path:first-child,
+  .nav-item:nth-child(4) .nav-icon svg rect{stroke-width:2.3}
+}
+
+
+
+/* Alignment + typography refinement */
+.nav-label{font-family:Arial,Helvetica,sans-serif;font-weight:400}
+.nav-item:nth-child(1) .nav-label,
+.nav-item:nth-child(2) .nav-label,
+.nav-item:nth-child(4) .nav-label,
+.nav-item:nth-child(5) .nav-label{margin-top:0}
+/* YouTube-reference sizing pass: layout/spacing/text only; SVG artwork and colors preserved. */
+.yt-wordmark{font-weight:700}
+.shorts-title{font-weight:700}
+.nav-label{font-weight:400}
+/* Final light-weight UI polish — layout and content structure preserved. */
+.header-icon-btn svg{shape-rendering:geometricPrecision}
+.meta-overflow span,.shorts-overflow span{width:3.5px;height:3.5px}
+.cc-control::before{font-weight:600;color:#666}
+
+/* ============================================================
+   FINAL MOBILE FIT / ALIGNMENT PASS
+   SVG artwork, icon paths, fills, colors, and HTML structure
+   are intentionally untouched.
+   ============================================================ */
+@media(max-width:430px){
+  :root{
+    --inset:20px;
+    --header-h:48px;
+    --chips-h:56px;
+    --chip-h:36px;
+    --nav-h:72px;
+    --short-gap:8px;
+  }
+
+  /* Header: compact and evenly centered */
+  .top-header{
+    height:48px;
+    padding:0 18px;
+  }
+  .youtube-logo{
+    gap:4px;
+  }
+  .yt-play-mark{
+    width:32px;
+    height:23px;
+  }
+  .yt-wordmark{
+    font-size:21px;
+    letter-spacing:-.7px;
+  }
+  .header-icons{
+    gap:8px;
+  }
+  .header-icon-btn{
+    width:30px;
+    height:30px;
+  }
+  .header-icon-btn svg{
+    width:22px;
+    height:22px;
+  }
+
+  /* Topic chips: one consistent baseline, tighter inter-chip spacing */
+  .category-scroller{
+    height:56px;
+    gap:7px;
+    padding-left:20px;
+    padding-right:10px;
+  }
+  .explore-btn{
+    width:46px;
+    height:36px;
+  }
+  .explore-btn svg{
+    width:23px;
+    height:23px;
+  }
+  .chip{
+    height:36px;
+    padding:0 12px;
+    font-size:14px;
+    line-height:1;
+  }
+  .chip-all{
+    padding:0 14px;
+  }
+
+  /* Video controls: preserve existing icons; only fit their boxes */
+  .mute-icon{
+    top:8px;
+    right:10px;
+    width:30px;
+    height:30px;
+  }
+  .mute-icon svg{
+    width:22px;
+    height:23px;
+  }
+  .cc-control{
+    top:48px;
+    right:10px;
+    width:30px;
+    height:30px;
+  }
+  .cc-control::before{
+    width:24px;
+    height:20px;
+    font-size:10px;
+    letter-spacing:.8px;
+  }
+
+  /* Metadata: reduce the visual gap after the player */
+  .video-meta{
+    gap:10px;
+    padding:10px 20px 0;
+  }
+  .channel-avatar{
+    width:40px;
+    height:40px;
+    flex-basis:40px;
+  }
+  .meta-text{
+    padding-right:22px;
+  }
+  .video-title{
+    font-size:15px;
+    line-height:19px;
+  }
+  .video-secondary{
+    font-size:12px;
+    line-height:16px;
+    margin-top:2px;
+  }
+
+  /* Shorts: keep the section visually tied to the metadata */
+  .shorts-section{
+    padding-top:27px;
+  }
+  .shorts-header{
+    height:40px;
+    padding:0 20px;
+    gap:10px;
+  }
+  .shorts-icon{
+    width:30px;
+    height:30px;
+    flex-basis:30px;
+  }
+  .shorts-icon svg{
+    width:30px;
+    height:30px;
+  }
+  .shorts-title{
+    font-size:20px;
+    line-height:1;
+  }
+  .shorts-overflow{
+    right:15px;
+  }
+  .shorts-grid{
+    gap:8px;
+    padding:4px 20px 0;
+  }
+
+  /* Bottom navigation: equal columns, shared baseline, consistent visual scale */
+  .bottom-navigation{
+    height:72px;
+    padding-bottom:0;
+  }
+  .nav-items{
+    height:100%;
+  }
+  .nav-item{
+    padding:4px 0 0;
+    gap:3px;
+  }
+
+  .nav-item.home-active::before{
+    top:-1px;
+    width:50px;
+    height:50px;
+  }
+
+  .nav-icon,
+  .nav-item:nth-child(1) .nav-icon,
+  .nav-item:nth-child(4) .nav-icon{
+    width:27px;
+    height:27px;
+    flex-basis:27px;
+  }
+
+  .nav-icon svg,
+  .nav-item:nth-child(1) .nav-icon svg,
+  .nav-item:nth-child(4) .nav-icon svg{
+    width:27px;
+    height:27px;
+  }
+
+  .nav-label{
+    font-size:11px;
+    line-height:1.05;
+    margin-top:0;
+  }
+
+  .nav-create-circle{
+    width:40px;
+    height:40px;
+    flex-basis:40px;
+    margin-top:-2px;
+  }
+  .nav-create-circle svg{
+    width:20px;
+    height:20px;
+  }
+
+  .nav-profile-avatar{
+    width:24px;
+    height:24px;
+    flex-basis:24px;
+    margin-top:0;
+  }
+
+  /* Targeted Shorts bottom-nav correction:
+     keep the existing SVG artwork unchanged while matching
+     the neighboring icons' visual scale, weight, and baseline. */
+  .nav-item:nth-child(2) .nav-icon{
+    width:27px;
+    height:27px;
+    flex-basis:27px;
+  }
+
+  .nav-item:nth-child(2) .nav-icon svg{
+    width:24px;
+    height:24px;
+    display:block;
+  }
+
+  .nav-item:nth-child(2) .nav-icon svg path:first-child{
+    stroke-width:1.35;
+  }
+
+  /* Let the playback indicator extend cleanly past the video's left edge. */
+  .main-video{
+    overflow:visible;
+  }
+
+  .progress-container{
+    overflow:visible;
+  }
+
+  .progress-track,
+  .progress-active{
+    overflow:visible;
+  }
+}
+
+</style>
+</head>
+<body>
+
+<header class="top-header" aria-label="YouTube header">
+  <div class="youtube-logo">
+    <svg class="yt-play-mark" viewBox="0 0 56 40" fill="none" aria-hidden="true">
+      <path d="M53.8 8.15C53.2 5.8 51.35 3.95 49 3.35C44.75 2.25 28 2.25 28 2.25C28 2.25 11.25 2.25 7 3.35C4.65 3.95 2.8 5.8 2.2 8.15C1.1 12.4 1.1 20 1.1 20C1.1 20 1.1 27.6 2.2 31.85C2.8 34.2 4.65 36.05 7 36.65C11.25 37.75 28 37.75 28 37.75C28 37.75 44.75 37.75 49 36.65C51.35 36.05 53.2 34.2 53.8 31.85C54.9 27.6 54.9 20 54.9 20C54.9 20 54.9 12.4 53.8 8.15Z" fill="#FF0033"/>
+      <path d="M23.3 27.35L37.25 20L23.3 12.65V27.35Z" fill="#fff"/>
+    </svg>
+    <span class="yt-wordmark">YouTube</span>
+  </div>
+
+  <div class="header-icons">
+    <button class="header-icon-btn" type="button" aria-label="Notifications">
+      <svg viewBox="0 0 33 33" fill="none"><path d="M16.5 6.3C11.85 6.3 8.25 9.95 8.25 14.55V18.4C8.25 20.45 6.85 21.95 6.5 23.45C6.25 24.45 6.95 25.15 7.95 25.15H25.05C26.05 25.15 26.75 24.45 26.5 23.45C26.15 21.95 24.75 20.45 24.75 18.4V14.55C24.75 9.95 21.15 6.3 16.5 6.3Z" stroke="#F1F1F1" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round"/><path d="M13.6 28.55C14.2 29.85 15.25 30.6 16.5 30.6C17.75 30.6 18.8 29.85 19.4 28.55" stroke="#F1F1F1" stroke-width="2.0" stroke-linecap="round"/></svg>
+    </button>
+    <button class="header-icon-btn" type="button" aria-label="Search">
+      <svg viewBox="0 0 33 33" fill="none"><circle cx="14.3" cy="14.3" r="9.9" stroke="#F1F1F1" stroke-width="2.2"/><path d="M21.7 21.7L28.5 28.5" stroke="#F1F1F1" stroke-width="2.2" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+</header>
+
+<nav class="category-scroller" aria-label="Categories">
+  <button class="explore-btn" type="button" aria-label="Explore"><svg viewBox="0 0 44 44" fill="none" aria-hidden="true"><circle cx="22" cy="22" r="16.2" stroke="#F1F1F1" stroke-width="3.2"/><path d="M14.4 28.4L19 17.9L29.6 14.4L25 25Z" stroke="#F1F1F1" stroke-width="3.1" stroke-linejoin="round"/><circle cx="22" cy="22" r="2.1" fill="#F1F1F1"/></svg></button>
+  <button class="chip chip-all" type="button">All</button>
+  <button class="chip chip-unselected" type="button">Marvel Studios</button>
+  <button class="chip chip-unselected" type="button">Gaming</button>
+  <button class="chip chip-unselected" type="button">Music</button>
+  <button class="chip chip-unselected" type="button">Trailers</button>
+  <button class="chip chip-unselected" type="button">Live</button>
+  <button class="chip chip-unselected" type="button">News</button>
+  <button class="chip chip-unselected" type="button">Tech</button>
+</nav>
+
+<section class="main-video" aria-label="Video player">
+  <video
+    id="hero-video"
+    autoplay
+    muted
+    playsinline
+    preload="auto"
+    poster="assets/video-01.jpg"
+    aria-label="Comics Explained video">
+    <source src="assets/video-01.mp4" type="video/mp4">
+  </video>
+
+  <div class="video-overlays">
+    <div class="mute-icon" aria-label="Volume">
+      <svg viewBox="0 0 33 33" fill="none" aria-hidden="true">
+        <path d="M5.5 13.2H10L16.1 7V26L10 19.8H5.5V13.2Z" fill="#F1F1F1"/>
+        <path d="M19.4 11.4C21.7 13.6 21.7 19.4 19.4 21.6" stroke="#F1F1F1" stroke-width="1.9" stroke-linecap="round"/>
+        <path d="M22.1 8.6C26 12.1 26 20.9 22.1 24.4" stroke="#F1F1F1" stroke-width="1.9" stroke-linecap="round"/>
+        <path d="M8 7.1L26.8 25.9" stroke="#fff" stroke-width="2.7" stroke-linecap="round"/>
+      </svg>
+    </div>
+
+    <div class="cc-control" aria-label="Closed captions">CC</div>
+    <div class="subtitle-overlay">Never miss a moment</div>
+    <div id="duration-indicator" class="duration-indicator">0:00</div>
+
+    <div class="progress-container" aria-hidden="true">
+      <div class="progress-track">
+        <div class="progress-active"><div class="progress-knob"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="video-meta" aria-label="Video information">
+  <div class="channel-avatar"><img id="channel-avatar" src="assets/channel-avatar.jpg" alt="Comics Explained"></div>
+  <div class="meta-text">
+    <h1 id="video-title" class="video-title">Green Lantern: Origin of John Stewart</h1>
+    <p id="video-secondary" class="video-secondary">Comics Explained · 226K views · 2 days ago</p>
+  </div>
+  <button class="meta-overflow" type="button" aria-label="More options"><span></span><span></span><span></span></button>
+</section>
+
+<section class="shorts-section" aria-label="Shorts">
+  <header class="shorts-header">
+    <div class="shorts-icon">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="m18.931 9.99-1.441-.601 1.717-.913a4.48 4.48 0 0 0 1.874-6.078 4.506 4.506 0 0 0-6.09-1.874L4.792 5.929a4.504 4.504 0 0 0-2.402 4.193 4.521 4.521 0 0 0 2.666 3.904c.036.012 1.442.6 1.442.6l-1.706.901a4.51 4.51 0 0 0-2.369 3.967A4.528 4.528 0 0 0 6.93 24c.725 0 1.437-.174 2.08-.508l10.21-5.406a4.494 4.494 0 0 0 2.39-4.192 4.525 4.525 0 0 0-2.678-3.904ZM9.597 15.19V8.824l6.007 3.184z" fill="#FF0033"/>
+        <path d="M9.597 15.19V8.824l6.007 3.184z" fill="#fff"/>
+      </svg>
+    </div>
+    <h2 class="shorts-title">Shorts</h2>
+    <button class="shorts-overflow" type="button" aria-label="More shorts options"><span></span><span></span><span></span></button>
+  </header>
+  <div class="shorts-grid" id="shorts-grid"></div>
+</section>
+
+<main id="profile-screen" class="profile-screen" aria-label="You profile">
+
+  <div class="profile-toolbar">
+    <button class="profile-account-btn" type="button" aria-label="Accounts">
+      <span>Accounts</span>
+      <span class="profile-account-chevron" aria-hidden="true"></span>
+    </button>
+
+    <div class="profile-toolbar-actions">
+      <button class="profile-toolbar-btn" type="button" aria-label="Notifications">
+        <svg viewBox="0 0 33 33" fill="none" aria-hidden="true">
+          <path d="M16.5 6.3C11.85 6.3 8.25 9.95 8.25 14.55V18.4C8.25 20.45 6.85 21.95 6.5 23.45C6.25 24.45 6.95 25.15 7.95 25.15H25.05C26.05 25.15 26.75 24.45 26.5 23.45C26.15 21.95 24.75 20.45 24.75 18.4V14.55C24.75 9.95 21.15 6.3 16.5 6.3Z" stroke="#F1F1F1" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M13.6 28.55C14.2 29.85 15.25 30.6 16.5 30.6C17.75 30.6 18.8 29.85 19.4 28.55" stroke="#F1F1F1" stroke-width="2.4" stroke-linecap="round"/>
+        </svg>
+      </button>
+
+      <button class="profile-toolbar-btn" type="button" aria-label="Search">
+        <svg viewBox="0 0 33 33" fill="none" aria-hidden="true">
+          <circle cx="14.3" cy="14.3" r="9.9" stroke="#F1F1F1" stroke-width="2.4"/>
+          <path d="M21.7 21.7L28.5 28.5" stroke="#F1F1F1" stroke-width="2.4" stroke-linecap="round"/>
+        </svg>
+      </button>
+
+      <button class="profile-toolbar-btn" type="button" aria-label="Settings">
+        <svg viewBox="0 0 33 33" fill="none" aria-hidden="true">
+          <path d="M13.5 3.7L19.5 3.7L20.7 7.2C21.5 7.5 22.3 7.9 23 8.4L26.5 7.3L29.5 12.5L26.8 15.1C26.9 15.9 26.9 16.8 26.8 17.6L29.5 20.5L26.5 25.7L23 24.6C22.3 25.1 21.5 25.5 20.7 25.8L19.5 29.3L13.5 29.3L12.3 25.8C11.5 25.5 10.7 25.1 10 24.6L6.5 25.7L3.5 20.5L6.2 17.6C6.1 16.8 6.1 15.9 6.2 15.1L3.5 12.5L6.5 7.3L10 8.4C10.7 7.9 11.5 7.5 12.3 7.2Z" stroke="#F1F1F1" stroke-width="2.2" stroke-linejoin="round"/>
+          <circle cx="16.5" cy="16.35" r="5" stroke="#F1F1F1" stroke-width="2.2"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <section class="profile-summary">
+    <div class="profile-avatar-large">
+      <div class="profile-avatar-placeholder" aria-label="Profile image placeholder">AVATAR</div>
+    </div>
+    <div class="profile-summary-text">
+      <h1 class="profile-name profile-text-placeholder">Name placeholder</h1>
+      <p class="profile-handle profile-text-placeholder">Handle placeholder <span class="profile-dot">•</span> View channel<span class="profile-chevron-inline" aria-hidden="true"></span></p>
+    </div>
+  </section>
+
+  <section class="profile-section" aria-label="History">
+    <div class="profile-section-header">
+      <h2 class="profile-section-title">History <span class="profile-title-chevron" aria-hidden="true"></span></h2>
+    </div>
+
+    <div class="profile-history">
+      <article class="history-card">
+      <div class="history-thumb profile-media-placeholder" aria-label="History thumbnail placeholder">
+        <span>THUMBNAIL</span>
+      </div>
+      <p class="history-title profile-text-placeholder">Title placeholder</p>
+      <p class="history-meta profile-text-placeholder">Metadata placeholder</p>
+    </article>
+
+      <article class="history-card">
+      <div class="history-thumb profile-media-placeholder" aria-label="History thumbnail placeholder">
+        <span>THUMBNAIL</span>
+      </div>
+      <p class="history-title profile-text-placeholder">Title placeholder</p>
+      <p class="history-meta profile-text-placeholder">Metadata placeholder</p>
+    </article>
+
+      <article class="history-card">
+      <div class="history-thumb profile-media-placeholder" aria-label="History thumbnail placeholder">
+        <span>THUMBNAIL</span>
+      </div>
+      <p class="history-title profile-text-placeholder">Title placeholder</p>
+      <p class="history-meta profile-text-placeholder">Metadata placeholder</p>
+    </article>
+    </div>
+  </section>
+
+  <section class="profile-section" aria-label="Playlists">
+    <div class="profile-section-header">
+      <h2 class="profile-section-title">Playlists <span class="profile-title-chevron" aria-hidden="true"></span></h2>
+      <button class="profile-section-action" type="button" aria-label="Create playlist"></button>
+    </div>
+
+    <div class="profile-playlists">
+      <article class="playlist-card">
+      <div class="playlist-thumb profile-media-placeholder" aria-label="Playlist thumbnail placeholder">
+        <span>PLAYLIST</span>
+      </div>
+      <p class="playlist-title profile-text-placeholder">Playlist placeholder</p>
+      <p class="playlist-privacy profile-text-placeholder">Privacy placeholder</p>
+    </article>
+
+      <article class="playlist-card">
+      <div class="playlist-thumb profile-media-placeholder" aria-label="Playlist thumbnail placeholder">
+        <span>PLAYLIST</span>
+      </div>
+      <p class="playlist-title profile-text-placeholder">Playlist placeholder</p>
+      <p class="playlist-privacy profile-text-placeholder">Privacy placeholder</p>
+    </article>
+    </div>
+  </section>
+
+  <section class="profile-links" aria-label="Your content">
+    <button class="profile-link" type="button">
+      <span class="profile-link-icon">
+        <svg viewBox="0 0 44 44" fill="none" aria-hidden="true">
+          <rect x="6" y="11" width="32" height="23" rx="2" stroke="#F1F1F1" stroke-width="3"/>
+          <path d="M18 17L29 22.5L18 28V17Z" fill="#F1F1F1"/>
+        </svg>
+      </span>
+      <span class="profile-link-label profile-text-placeholder">Link placeholder</span>
+    </button>
+
+    <button class="profile-link" type="button">
+      <span class="profile-link-icon">
+        <svg viewBox="0 0 44 44" fill="none" aria-hidden="true">
+          <path d="M22 7V28" stroke="#F1F1F1" stroke-width="3" stroke-linecap="round"/>
+          <path d="M13 20L22 29L31 20" stroke="#F1F1F1" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M10 35H34" stroke="#F1F1F1" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <span class="profile-link-label profile-text-placeholder">Link placeholder</span>
+    </button>
+  </section>
+
+</main>
+
+<nav class="bottom-navigation" aria-label="Bottom navigation">
+  <div class="nav-items">
+    <button class="nav-item home-active" type="button" aria-label="Home">
+      <div class="nav-icon home-icon-wrap">
+        <svg viewBox="0 0 48 48" fill="none" aria-hidden="true">
+          <path d="M4.5 15.5L24 2.5L43.5 15.5L40.5 15.5V37.5Q40.5 40 38 40H29V25.5Q29 23 26.5 23H21.5Q19 23 19 25.5V40H10Q7.5 40 7.5 37.5V15.5H4.5Z"
+                fill="none"
+                stroke="#F1F1F1"
+                stroke-width="4"
+                stroke-linejoin="round"
+                stroke-linecap="round"/>
+        </svg>
+      </div>
+      <span class="nav-label">Home</span>
+    </button>
+
+    <button class="nav-item" type="button" aria-label="Shorts">
+      <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="m18.931 9.99-1.441-.601 1.717-.913a4.48 4.48 0 0 0 1.874-6.078 4.506 4.506 0 0 0-6.09-1.874L4.792 5.929a4.504 4.504 0 0 0-2.402 4.193 4.521 4.521 0 0 0 2.666 3.904c.036.012 1.442.6 1.442.6l-1.706.901a4.51 4.51 0 0 0-2.369 3.967A4.528 4.528 0 0 0 6.93 24c.725 0 1.437-.174 2.08-.508l10.21-5.406a4.494 4.494 0 0 0 2.39-4.192 4.525 4.525 0 0 0-2.678-3.904Z" fill="#0F0F0F" stroke="#F1F1F1" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M9.597 15.19V8.824l6.007 3.184z" fill="#F1F1F1"/>
+      </svg></div>
+      <span class="nav-label">Shorts</span>
+    </button>
+
+    <button class="nav-item" type="button" aria-label="Create">
+      <div class="nav-create-circle"><svg viewBox="0 0 32 32" fill="none"><path d="M16 5V27M5 16H27" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg></div>
+    </button>
+
+    <button class="nav-item" type="button" aria-label="Subscriptions">
+      <div class="nav-icon"><svg viewBox="0 0 42 40" fill="none" aria-hidden="true">
+        <path d="M14.5 7H27.5" stroke="#F1F1F1" stroke-width="2" stroke-linecap="round"/>
+        <rect x="2" y="12" width="38" height="26" rx="2.5" stroke="#F1F1F1" stroke-width="2"/>
+        <path d="M14.5 18.5L24 25L14.5 31.5V18.5Z" fill="#F1F1F1"/>
+        <circle cx="36" cy="11.5" r="6.5" fill="#FF0033"/>
+      </svg></div>
+      <span class="nav-label">Subscriptions</span>
+    </button>
+
+    <a id="profile-nav" class="nav-item" href="profile.html" aria-label="You" data-profile-target="profile.html">
+      <div class="nav-profile-avatar"><img id="profile-avatar" src="assets/profile.jpg" alt="Profile"></div>
+      <span class="nav-label">You</span>
+    </a>
+  </div>
+</nav>
+
+<script>
+/*
+  ASSET FILES YOU SUPPLY:
+  assets/video-01.jpg ... assets/video-06.jpg
+  assets/short-01.jpg  ... assets/short-08.jpg
+  assets/channel-avatar.jpg
+  assets/profile.jpg
+*/
+
+const videoOptions = [
+  {title:'Green Lantern: Origin of John Stewart',meta:'Comics Explained · 226K views · 2 days ago',image:'assets/video-01.jpg',video:'assets/video-01.mp4'},
+  {title:'How I Reached 500K Views With YouTube Shorts',meta:'Passive Hustler · 214K views · 2 weeks ago',image:'assets/video-02.jpg',video:'assets/video-02.mp4'},
+  {title:'YouTube Shorts Algorithm: 7 Things Creators Miss',meta:'Passive Hustler · 98K views · 5 days ago',image:'assets/video-03.jpg',video:'assets/video-03.mp4'},
+  {title:'I Tested 30 Shorts — Here’s What Actually Worked',meta:'Passive Hustler · 156K views · 1 month ago',image:'assets/video-04.jpg',video:'assets/video-04.mp4'},
+  {title:'The Shorts Views Drop: What’s Really Happening?',meta:'Passive Hustler · 72K views · 4 days ago',image:'assets/video-05.jpg',video:'assets/video-05.mp4'},
+  {title:'How to Get More Views on Every Short You Post',meta:'Passive Hustler · 301K views · 3 months ago',image:'assets/video-06.jpg',video:'assets/video-06.mp4'}
+];
+
+const shortOptions = [
+  {title:'How much YouTube paid me for 500 million faceless views',image:'assets/short-01.jpg'},
+  {title:'Shorts Algorithm Secret 🤔 | 0 Views…',image:'assets/short-02.jpg'},
+  {title:'3 Editing Tricks That Make Shorts More Watchable',image:'assets/short-03.jpg'},
+  {title:'Why Your First 2 Seconds Matter',image:'assets/short-04.jpg'},
+  {title:'Best Shorts Hook Formula?',image:'assets/short-05.jpg'},
+  {title:'I Posted 7 Shorts in One Day',image:'assets/short-06.jpg'},
+  {title:'Stop Doing This On YouTube Shorts',image:'assets/short-07.jpg'},
+  {title:'Small Channel? Try This',image:'assets/short-08.jpg'}
+];
+
+function randomIndex(max,avoid=-1){
+  let n=Math.floor(Math.random()*max);
+  if(window.crypto&&crypto.getRandomValues){const u=new Uint32Array(1);crypto.getRandomValues(u);n=u[0]%max;}
+  if(max>1&&n===avoid)n=(n+1)%max;
+  return n;
+}
+
+function pickVideo(){
+  let last=-1;
+  try{last=Number(localStorage.getItem('yt_ui_last_video'));}catch(e){}
+  const index=randomIndex(videoOptions.length,Number.isFinite(last)?last:-1);
+  try{localStorage.setItem('yt_ui_last_video',String(index));}catch(e){}
+  return videoOptions[index];
+}
+
+function pickShorts(){
+  const pool=[...shortOptions];
+  for(let i=pool.length-1;i>0;i--){
+    const j=randomIndex(i+1);
+    [pool[i],pool[j]]=[pool[j],pool[i]];
+  }
+  return pool.slice(0,6);
+}
+
+function makeShortCard(item){
+  const card=document.createElement('article');
+  card.className='short-card';
+
+  const placeholder=document.createElement('div');
+  placeholder.className='short-card-placeholder';
+  card.appendChild(placeholder);
+
+  const img=document.createElement('img');
+  img.src=item.image;
+  img.alt=item.title;
+  img.addEventListener('error',()=>{img.style.display='none';});
+  card.appendChild(img);
+
+  const overlay=document.createElement('div');
+  overlay.className='short-card-overlay';
+
+  const more=document.createElement('button');
+  more.className='short-card-more';
+  more.type='button';
+  more.setAttribute('aria-label','More options');
+  more.innerHTML='<span></span><span></span><span></span>';
+  overlay.appendChild(more);
+
+  const play=document.createElement('button');
+  play.className='short-play';
+  play.type='button';
+  play.setAttribute('aria-label','Play short');
+  play.innerHTML='<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path class="shorts-body" d="m18.931 9.99-1.441-.601 1.717-.913a4.48 4.48 0 0 0 1.874-6.078 4.506 4.506 0 0 0-6.09-1.874L4.792 5.929a4.504 4.504 0 0 0-2.402 4.193 4.521 4.521 0 0 0 2.666 3.904c.036.012 1.442.6 1.442.6l-1.706.901a4.51 4.51 0 0 0-2.369 3.967A4.528 4.528 0 0 0 6.93 24c.725 0 1.437-.174 2.08-.508l10.21-5.406a4.494 4.494 0 0 0 2.39-4.192 4.525 4.525 0 0 0-2.678-3.904ZM9.597 15.19V8.824l6.007 3.184z"/><path class="shorts-play" d="M9.597 15.19V8.824l6.007 3.184z"/></svg>';
+  overlay.appendChild(play);
+
+  const text=document.createElement('p');
+  text.className='short-card-text';
+  text.textContent=item.title;
+  overlay.appendChild(text);
+
+  card.appendChild(overlay);
+  return card;
+}
+
+function render(){
+  const video=pickVideo();
+  const hero=document.getElementById('hero-video');
+  hero.poster=video.image;
+  hero.src=video.video;
+  hero.muted=true;
+  hero.autoplay=true;
+  hero.playsInline=true;
+
+  document.getElementById('duration-indicator').textContent='0:00';
+
+  hero.load();
+  const playPromise=hero.play();
+  if(playPromise && typeof playPromise.catch==='function'){
+    playPromise.catch(()=>{});
+  }
+  document.getElementById('video-title').textContent=video.title;
+  document.getElementById('video-secondary').textContent=video.meta;
+
+  const grid=document.getElementById('shorts-grid');
+  grid.innerHTML='';
+  pickShorts().forEach(item=>grid.appendChild(makeShortCard(item)));
+}
+
+function setProfileMode(active){
+  document.body.classList.toggle('profile-mode', active);
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+  render();
+
+  const homeNav = document.querySelector('.nav-item[aria-label="Home"]');
+  const youNav = document.querySelector('.nav-item[aria-label="You"]');
+
+  if(homeNav) homeNav.addEventListener('click', function(){
+    setProfileMode(false);
+  });
+
+  if(youNav) youNav.addEventListener('click', function(){
+    setProfileMode(true);
+  });
+});
+</script>
+
+<script>
+(function(){
+  const video = document.getElementById('hero-video');
+  const timeDisplay = document.getElementById('duration-indicator');
+  const progress = document.querySelector('.progress-active');
+  const knob = document.querySelector('.progress-knob');
+
+
+  function formatTime(totalSeconds){
+    const seconds = Math.max(0, Math.floor(totalSeconds));
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return minutes + ':' + String(secs).padStart(2, '0');
+  }
+
+  function updatePlaybackUI(){
+    const current = Number.isFinite(video.currentTime)
+      ? Math.max(0, video.currentTime)
+      : 0;
+
+    const duration = Number.isFinite(video.duration) && video.duration > 0
+      ? video.duration
+      : 0;
+
+    const ratio = duration > 0
+      ? Math.min(1, current / duration)
+      : 0;
+
+    timeDisplay.textContent = formatTime(current);
+
+    progress.style.width = (ratio * 100) + '%';
+
+    if (knob) {
+      knob.style.right = '-7px';
+      knob.style.display = ratio > 0 ? 'block' : 'none';
+    }
+  }
+
+  function startMutedAutoplay(){
+    video.muted = true;
+    video.defaultMuted = true;
+    video.autoplay = true;
+    video.playsInline = true;
+
+    const playAttempt = video.play();
+    if (playAttempt && typeof playAttempt.catch === 'function') {
+      playAttempt.catch(function(){});
+    }
+  }
+
+  video.addEventListener('loadedmetadata', updatePlaybackUI);
+  video.addEventListener('timeupdate', updatePlaybackUI);
+  video.addEventListener('play', updatePlaybackUI);
+  video.addEventListener('pause', updatePlaybackUI);
+  video.addEventListener('ended', updatePlaybackUI);
+
+  updatePlaybackUI();
+
+  // Try immediately and again after the page becomes visible.
+  startMutedAutoplay();
+  document.addEventListener('visibilitychange', function(){
+    if (!document.hidden && video.paused) {
+      startMutedAutoplay();
+    }
+  });
+})();
+</script>
+</body>
+</html>
