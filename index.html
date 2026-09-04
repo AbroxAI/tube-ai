@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<title>YouTube Mobile UI — Passive Hustler</title>
+<style>
+:root{--bg:#0F0F0F;--text:#F1F1F1;--muted:#AAAAAA;--red:#FF0033;--chip:#272727;--inset:20px;--header-h:76px;--chips-h:72px;--chip-h:50px;--nav-h:96px;--short-gap:8px}
+*{margin:0;padding:0;box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased;scrollbar-width:none}
+html::-webkit-scrollbar,body::-webkit-scrollbar,.category-scroller::-webkit-scrollbar{width:0;height:0;display:none}
+body{width:100%;max-width:691px;min-height:100vh;margin:0 auto;overflow-x:hidden;overflow-y:auto;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;padding-bottom:calc(var(--nav-h) + 3px);scrollbar-width:none;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;cursor:pointer}
+
+/* Header */
+.top-header{height:var(--header-h);display:flex;align-items:center;justify-content:space-between;padding:0 22px;background:var(--bg)}
+.youtube-logo{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.yt-play-mark{width:46px;height:33px;display:block}
+.yt-wordmark{font-family:Arial,Helvetica,sans-serif;font-size:26px;font-weight:500;line-height:1;letter-spacing:-1px;white-space:nowrap}
+.header-icons{display:flex;align-items:center;gap:14px}
+.header-icon-btn{width:36px;height:36px;border:0;background:transparent;display:flex;align-items:center;justify-content:center;padding:0}
+.header-icon-btn svg{width:28px;height:28px;display:block}
+
+/* Category chips */
+.category-scroller{height:var(--chips-h);display:flex;align-items:center;gap:10px;padding-left:var(--inset);padding-right:0;overflow-x:auto;overflow-y:hidden;white-space:nowrap;scrollbar-width:none;-ms-overflow-style:none}
+.explore-btn{width:62px;height:var(--chip-h);flex:0 0 auto;border:0;border-radius:9px;background:#242424;display:flex;align-items:center;justify-content:center;padding:0}
+.explore-btn svg{width:29px;height:29px}
+.chip{height:42px;flex:0 0 auto;padding:0 13px;border:0;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;font-size:15px;font-weight:400}
+.chip-all{padding:0 16px;background:#F1F1F1;color:#181818;font-weight:500}
+.chip-unselected{background:var(--chip);color:#E5E5E5}
+
+/* Video player */
+.main-video{width:100%;aspect-ratio:16/9;position:relative;overflow:hidden;background:#1A1A1A}
+.main-video video{width:100%;height:100%;display:block;object-fit:cover;background:#1A1A1A}
+.main-video img[src=""],.main-video img:not([src]){visibility:hidden}
+.video-overlays{position:absolute;inset:0;z-index:2;pointer-events:none}
+.video-overlays>*{pointer-events:auto}
+/* Reference-matched player control buttons: 77px circles, 15px right inset */
+.mute-icon{position:absolute;top:15px;right:15px;width:77px;height:77px;opacity:1;background:#3A3A3A;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.mute-icon svg{width:48px;height:49px;display:block}
+.cc-control{position:absolute;top:108px;right:15px;width:77px;height:77px;display:flex;align-items:center;justify-content:center;background:#3A3A3A;color:#181818;border-radius:50%;font-size:0;font-weight:750;letter-spacing:.4px;line-height:1}
+.cc-control::before{content:"CC";display:flex;align-items:center;justify-content:center;width:42px;height:34px;background:#F1F1F1;color:#666;border-radius:4px;font-size:13px;font-weight:750;letter-spacing:1px;line-height:1}
+.subtitle-overlay{position:absolute;left:50%;bottom:30px;transform:translateX(-50%);padding:5px 14px 6px;background:rgba(0,0,0,.82);border-radius:4px;color:#fff;font-size:16px;font-weight:500;line-height:22px;white-space:nowrap}
+.duration-indicator{position:absolute;right:10px;bottom:14px;padding:5px 7px;background:rgba(0,0,0,.84);border-radius:4px;color:#fff;font-size:12px;font-weight:400;line-height:1;letter-spacing:.2px}
+.progress-container{position:absolute;left:0;right:0;bottom:0;height:19px;display:flex;align-items:flex-end;z-index:3}
+.progress-track{width:100%;height:4px;position:relative;background:rgba(255,255,255,.22)}
+.progress-active{width:0%;height:100%;position:relative;background:var(--red)}
+.progress-knob{position:absolute;top:50%;right:-7px;width:14px;height:14px;transform:translateY(-50%);background:var(--red);border-radius:50%}
+
+/* Video metadata */
+.video-meta{display:flex;align-items:flex-start;gap:11px;padding:13px var(--inset) 0;position:relative}
+.channel-avatar{width:44px;height:44px;flex:0 0 44px;border-radius:50%;overflow:hidden;background:#3A3A3A}
+.channel-avatar img{width:100%;height:100%;display:block;object-fit:cover;background:#3A3A3A}
+.meta-text{min-width:0;flex:1;padding-right:26px}
+.video-title{font-size:15px;line-height:19px;font-weight:400;color:var(--text);display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.video-secondary{font-size:12px;line-height:16px;margin-top:3px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meta-overflow,.shorts-overflow{width:24px;height:24px;border:0;background:transparent;padding:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;opacity:.95}
+.meta-overflow{position:absolute;right:15px;top:14px}
+.meta-overflow span,.shorts-overflow span{width:4px;height:4px;background:#F1F1F1;border-radius:50%;display:block}
+
+/* Shorts */
+.shorts-section{padding-top:26px}
+.shorts-header{height:40px;display:flex;align-items:center;padding:0 var(--inset);gap:10px;position:relative}
+.shorts-icon{width:32px;height:32px;display:flex;align-items:center;justify-content:center;flex:0 0 32px}
+.shorts-icon svg{width:32px;height:32px;display:block}
+.shorts-title{font-size:20px;font-weight:500;line-height:1;letter-spacing:-.2px}
+.shorts-overflow{position:absolute;right:15px;top:50%;transform:translateY(-50%)}
+.shorts-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--short-gap);padding:3px var(--inset) 0}
+.short-card{aspect-ratio:9/16;position:relative;overflow:hidden;border-radius:8px;background:#1A1A1A}
+.short-card img{position:absolute;inset:0;width:100%;height:100%;display:block;object-fit:cover;background:#1A1A1A}
+.short-card-placeholder{position:absolute;inset:0;background:#181818}
+.short-card-overlay{position:absolute;inset:0;z-index:2}
+.short-card-text{position:absolute;left:10px;right:30px;bottom:10px;font-size:13px;font-weight:400;color:#fff;line-height:17px;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;text-shadow:0 1px 3px rgba(0,0,0,.65)}
+.short-card-more{position:absolute;right:7px;top:7px;width:24px;height:24px;border:0;background:rgba(0,0,0,.35);border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.short-card-more span{width:3px;height:3px;background:#fff;border-radius:50%}
+.short-play{position:absolute;left:50%;top:50%;width:34px;height:34px;transform:translate(-50%,-50%);border:0;background:transparent;border-radius:0;display:flex;align-items:center;justify-content:center;box-shadow:none}
+.short-play svg{width:19px;height:19px;margin-left:2px}
+.short-play svg path{stroke:none}.short-play svg .shorts-body{fill:#F1F1F1 !important}.short-play svg .shorts-play{fill:#0F0F0F !important}
+
+/* Bottom navigation */
+.bottom-navigation{position:fixed;left:0;right:0;bottom:0;height:var(--nav-h);width:100%;max-width:691px;margin:0 auto;background:var(--bg);border-top:1px solid #202020;z-index:100}
+.nav-items{height:100%;display:flex;align-items:stretch}
+.nav-item{flex:1;min-width:0;border:0;background:transparent;padding:7px 0 0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:3px}
+.nav-item.home-active{position:relative}
+.nav-item.home-active::before{content:"";position:absolute;top:1px;left:50%;width:86px;height:86px;transform:translateX(-50%);border-radius:50%;background:#050505;z-index:0}
+.nav-item.home-active>*{position:relative;z-index:1}
+.nav-icon{width:25px;height:25px;flex:0 0 25px;display:flex;align-items:center;justify-content:center}
+.nav-icon svg{width:100%;height:100%;display:block}
+.nav-item:nth-child(1) .nav-icon{width:42px;height:40px;flex-basis:42px}
+.nav-item:nth-child(1) .nav-icon svg{width:42px;height:40px}
+.nav-item:nth-child(4) .nav-icon{width:42px;height:40px;flex-basis:42px}
+.nav-item:nth-child(4) .nav-icon svg{width:42px;height:40px}
+.home-icon-wrap{position:relative}
+.home-icon-wrap .home-return-mark{position:absolute;left:50%;top:50%;width:24px;height:24px;transform:translate(-50%,-4%)}
+.nav-label{font-size:11px;font-weight:400;line-height:1;color:#F1F1F1;white-space:nowrap}
+.nav-create-circle{width:48px;height:48px;flex:0 0 48px;margin-top:-6px;background:#2D2D2D;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.nav-create-circle svg{width:23px;height:23px;display:block}
+.nav-profile-avatar{width:30px;height:30px;flex:0 0 30px;border-radius:50%;overflow:hidden;background:#4A4A4A}
+.nav-profile-avatar img{width:100%;height:100%;display:block;object-fit:cover;background:#4A4A4A}
+
+@media(min-width:401px){
+  :root{--inset:20px;--header-h:76px;--chips-h:72px;--chip-h:50px;--nav-h:96px;--short-gap:10px}
+  .video-meta{gap:13px;padding-top:15px}.channel-avatar{width:52px;height:52px;flex-basis:52px}.meta-text{padding-right:30px}.video-title{font-size:17px;line-height:22px}.video-secondary{font-size:13px;line-height:18px}.shorts-section{padding-top:31px}.shorts-header{height:46px;gap:13px}.shorts-icon{width:36px;height:36px;flex-basis:36px}.shorts-icon svg{width:36px;height:36px}.shorts-title{font-size:23px}.shorts-grid{padding-top:4px}.short-card-text{font-size:15px;line-height:20px}.nav-icon{width:30px;height:30px;flex-basis:30px}.nav-label{font-size:12px}.nav-create-circle{width:54px;height:54px;flex-basis:54px;margin-top:-8px}.nav-profile-avatar{width:34px;height:34px;flex-basis:34px}
+}
+/* Phone-sized category sizing: match the lighter reference proportions */
+@media(max-width:400px){
+  .category-scroller{gap:8px}
+  .explore-btn{width:52px;height:42px;border-radius:8px}
+  .explore-btn svg{width:25px;height:25px}
+  .chip{height:42px;font-size:15px;padding:0 13px;border-radius:10px;font-weight:400}
+  .chip-all{padding:0 16px;font-weight:500}
+
+  /* Exact filled Home icon treatment from the reference */
+  .nav-icon{width:25px;height:25px;flex-basis:25px}
+}
+
+/* Final light-weight UI polish — layout and content structure preserved. */
+.header-icon-btn svg{shape-rendering:geometricPrecision}
+.meta-overflow span,.shorts-overflow span{width:3.5px;height:3.5px}
+.cc-control::before{font-weight:600;color:#666}
+</style>
+</head>
+<body>
+
+<header class="top-header" aria-label="YouTube header">
+  <div class="youtube-logo">
+    <svg class="yt-play-mark" viewBox="0 0 56 40" fill="none" aria-hidden="true">
+      <path d="M53.8 8.15C53.2 5.8 51.35 3.95 49 3.35C44.75 2.25 28 2.25 28 2.25C28 2.25 11.25 2.25 7 3.35C4.65 3.95 2.8 5.8 2.2 8.15C1.1 12.4 1.1 20 1.1 20C1.1 20 1.1 27.6 2.2 31.85C2.8 34.2 4.65 36.05 7 36.65C11.25 37.75 28 37.75 28 37.75C28 37.75 44.75 37.75 49 36.65C51.35 36.05 53.2 34.2 53.8 31.85C54.9 27.6 54.9 20 54.9 20C54.9 20 54.9 12.4 53.8 8.15Z" fill="#FF0033"/>
+      <path d="M23.3 27.35L37.25 20L23.3 12.65V27.35Z" fill="#fff"/>
+    </svg>
+    <span class="yt-wordmark">YouTube</span>
+  </div>
+
+  <div class="header-icons">
+    <button class="header-icon-btn" type="button" aria-label="Notifications">
+      <svg viewBox="0 0 33 33" fill="none"><path d="M16.5 6.3C11.85 6.3 8.25 9.95 8.25 14.55V18.4C8.25 20.45 6.85 21.95 6.5 23.45C6.25 24.45 6.95 25.15 7.95 25.15H25.05C26.05 25.15 26.75 24.45 26.5 23.45C26.15 21.95 24.75 20.45 24.75 18.4V14.55C24.75 9.95 21.15 6.3 16.5 6.3Z" stroke="#F1F1F1" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round"/><path d="M13.6 28.55C14.2 29.85 15.25 30.6 16.5 30.6C17.75 30.6 18.8 29.85 19.4 28.55" stroke="#F1F1F1" stroke-width="2.0" stroke-linecap="round"/></svg>
+    </button>
+    <button class="header-icon-btn" type="button" aria-label="Search">
+      <svg viewBox="0 0 33 33" fill="none"><circle cx="14.3" cy="14.3" r="9.9" stroke="#F1F1F1" stroke-width="2.2"/><path d="M21.7 21.7L28.5 28.5" stroke="#F1F1F1" stroke-width="2.2" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+</header>
+
+<nav class="category-scroller" aria-label="Categories">
+  <button class="explore-btn" type="button" aria-label="Explore"><svg viewBox="0 0 44 44" fill="none" aria-hidden="true"><circle cx="22" cy="22" r="16.2" stroke="#F1F1F1" stroke-width="3.2"/><path d="M14.4 28.4L19 17.9L29.6 14.4L25 25Z" stroke="#F1F1F1" stroke-width="3.1" stroke-linejoin="round"/><circle cx="22" cy="22" r="2.1" fill="#F1F1F1"/></svg></button>
+  <button class="chip chip-all" type="button">All</button>
+  <button class="chip chip-unselected" type="button">Marvel Studios</button>
+  <button class="chip chip-unselected" type="button">Gaming</button>
+  <button class="chip chip-unselected" type="button">Music</button>
+  <button class="chip chip-unselected" type="button">Trailers</button>
+  <button class="chip chip-unselected" type="button">Live</button>
+  <button class="chip chip-unselected" type="button">News</button>
+  <button class="chip chip-unselected" type="button">Tech</button>
+</nav>
+
+<section class="main-video" aria-label="Video player">
+  <video
+    id="hero-video"
+    autoplay
+    muted
+    playsinline
+    preload="auto"
+    poster="assets/video-01.jpg"
+    aria-label="Comics Explained video">
+    <source src="assets/video-01.mp4" type="video/mp4">
+  </video>
+
+  <div class="video-overlays">
+    <div class="mute-icon" aria-label="Volume">
+      <svg viewBox="0 0 33 33" fill="none" aria-hidden="true">
+        <path d="M5.5 13.2H10L16.1 7V26L10 19.8H5.5V13.2Z" fill="#F1F1F1"/>
+        <path d="M19.4 11.4C21.7 13.6 21.7 19.4 19.4 21.6" stroke="#F1F1F1" stroke-width="1.9" stroke-linecap="round"/>
+        <path d="M22.1 8.6C26 12.1 26 20.9 22.1 24.4" stroke="#F1F1F1" stroke-width="1.9" stroke-linecap="round"/>
+        <path d="M8 7.1L26.8 25.9" stroke="#fff" stroke-width="2.7" stroke-linecap="round"/>
+      </svg>
+    </div>
+
+    <div class="cc-control" aria-label="Closed captions">CC</div>
+    <div class="subtitle-overlay">Never miss a moment</div>
+    <div id="duration-indicator" class="duration-indicator">0:00</div>
+
+    <div class="progress-container" aria-hidden="true">
+      <div class="progress-track">
+        <div class="progress-active"><div class="progress-knob"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="video-meta" aria-label="Video information">
+  <div class="channel-avatar"><img id="channel-avatar" src="assets/channel-avatar.jpg" alt="Comics Explained"></div>
+  <div class="meta-text">
+    <h1 id="video-title" class="video-title">Green Lantern: Origin of John Stewart</h1>
+    <p id="video-secondary" class="video-secondary">Comics Explained · 226K views · 2 days ago</p>
+  </div>
+  <button class="meta-overflow" type="button" aria-label="More options"><span></span><span></span><span></span></button>
+</section>
+
+<section class="shorts-section" aria-label="Shorts">
+  <header class="shorts-header">
+    <div class="shorts-icon">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="m18.931 9.99-1.441-.601 1.717-.913a4.48 4.48 0 0 0 1.874-6.078 4.506 4.506 0 0 0-6.09-1.874L4.792 5.929a4.504 4.504 0 0 0-2.402 4.193 4.521 4.521 0 0 0 2.666 3.904c.036.012 1.442.6 1.442.6l-1.706.901a4.51 4.51 0 0 0-2.369 3.967A4.528 4.528 0 0 0 6.93 24c.725 0 1.437-.174 2.08-.508l10.21-5.406a4.494 4.494 0 0 0 2.39-4.192 4.525 4.525 0 0 0-2.678-3.904ZM9.597 15.19V8.824l6.007 3.184z" fill="#FF0033"/>
+        <path d="M9.597 15.19V8.824l6.007 3.184z" fill="#fff"/>
+      </svg>
+    </div>
+    <h2 class="shorts-title">Shorts</h2>
+    <button class="shorts-overflow" type="button" aria-label="More shorts options"><span></span><span></span><span></span></button>
+  </header>
+  <div class="shorts-grid" id="shorts-grid"></div>
+</section>
+
+<nav class="bottom-navigation" aria-label="Bottom navigation">
+  <div class="nav-items">
+    <button class="nav-item home-active" type="button" aria-label="Home">
+      <div class="nav-icon home-icon-wrap">
+        <svg viewBox="0 0 42 40" fill="none" aria-hidden="true">
+          <path d="M0 16.8L21 0L42 16.8L35 16.8V38H7V16.8Z" fill="none" stroke="#F1F1F1" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>
+          <path d="M14 38V23H28V38H14Z" fill="#0F0F0F"/>
+        </svg>
+      </div>
+      <span class="nav-label">Home</span>
+    </button>
+
+    <button class="nav-item" type="button" aria-label="Shorts">
+      <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="m18.931 9.99-1.441-.601 1.717-.913a4.48 4.48 0 0 0 1.874-6.078 4.506 4.506 0 0 0-6.09-1.874L4.792 5.929a4.504 4.504 0 0 0-2.402 4.193 4.521 4.521 0 0 0 2.666 3.904c.036.012 1.442.6 1.442.6l-1.706.901a4.51 4.51 0 0 0-2.369 3.967A4.528 4.528 0 0 0 6.93 24c.725 0 1.437-.174 2.08-.508l10.21-5.406a4.494 4.494 0 0 0 2.39-4.192 4.525 4.525 0 0 0-2.678-3.904Z" fill="#0F0F0F" stroke="#F1F1F1" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M9.597 15.19V8.824l6.007 3.184z" fill="#F1F1F1"/>
+      </svg></div>
+      <span class="nav-label">Shorts</span>
+    </button>
+
+    <button class="nav-item" type="button" aria-label="Create">
+      <div class="nav-create-circle"><svg viewBox="0 0 32 32" fill="none"><path d="M16 5V27M5 16H27" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg></div>
+    </button>
+
+    <button class="nav-item" type="button" aria-label="Subscriptions">
+      <div class="nav-icon"><svg viewBox="0 0 42 40" fill="none" aria-hidden="true">
+        <path d="M14.5 7H27.5" stroke="#F1F1F1" stroke-width="2" stroke-linecap="round"/>
+        <rect x="2" y="12" width="38" height="26" rx="2.5" stroke="#F1F1F1" stroke-width="2"/>
+        <path d="M14.5 18.5L24 25L14.5 31.5V18.5Z" fill="#F1F1F1"/>
+        <circle cx="36" cy="11.5" r="6.5" fill="#FF0033"/>
+      </svg></div>
+      <span class="nav-label">Subscriptions</span>
+    </button>
+
+    <button class="nav-item" type="button" aria-label="You">
+      <div class="nav-profile-avatar"><img id="profile-avatar" src="assets/profile.jpg" alt="Profile"></div>
+      <span class="nav-label">You</span>
+    </button>
+  </div>
+</nav>
+
+<script>
+/*
+  ASSET FILES YOU SUPPLY:
+  assets/video-01.jpg ... assets/video-06.jpg
+  assets/short-01.jpg  ... assets/short-08.jpg
+  assets/channel-avatar.jpg
+  assets/profile.jpg
+*/
+
+const videoOptions = [
+  {title:'Green Lantern: Origin of John Stewart',meta:'Comics Explained · 226K views · 2 days ago',image:'assets/video-01.jpg',video:'assets/video-01.mp4'},
+  {title:'How I Reached 500K Views With YouTube Shorts',meta:'Passive Hustler · 214K views · 2 weeks ago',image:'assets/video-02.jpg',video:'assets/video-02.mp4'},
+  {title:'YouTube Shorts Algorithm: 7 Things Creators Miss',meta:'Passive Hustler · 98K views · 5 days ago',image:'assets/video-03.jpg',video:'assets/video-03.mp4'},
+  {title:'I Tested 30 Shorts — Here’s What Actually Worked',meta:'Passive Hustler · 156K views · 1 month ago',image:'assets/video-04.jpg',video:'assets/video-04.mp4'},
+  {title:'The Shorts Views Drop: What’s Really Happening?',meta:'Passive Hustler · 72K views · 4 days ago',image:'assets/video-05.jpg',video:'assets/video-05.mp4'},
+  {title:'How to Get More Views on Every Short You Post',meta:'Passive Hustler · 301K views · 3 months ago',image:'assets/video-06.jpg',video:'assets/video-06.mp4'}
+];
+
+const shortOptions = [
+  {title:'How much YouTube paid me for 500 million faceless views',image:'assets/short-01.jpg'},
+  {title:'Shorts Algorithm Secret 🤔 | 0 Views…',image:'assets/short-02.jpg'},
+  {title:'3 Editing Tricks That Make Shorts More Watchable',image:'assets/short-03.jpg'},
+  {title:'Why Your First 2 Seconds Matter',image:'assets/short-04.jpg'},
+  {title:'Best Shorts Hook Formula?',image:'assets/short-05.jpg'},
+  {title:'I Posted 7 Shorts in One Day',image:'assets/short-06.jpg'},
+  {title:'Stop Doing This On YouTube Shorts',image:'assets/short-07.jpg'},
+  {title:'Small Channel? Try This',image:'assets/short-08.jpg'}
+];
+
+function randomIndex(max,avoid=-1){
+  let n=Math.floor(Math.random()*max);
+  if(window.crypto&&crypto.getRandomValues){const u=new Uint32Array(1);crypto.getRandomValues(u);n=u[0]%max;}
+  if(max>1&&n===avoid)n=(n+1)%max;
+  return n;
+}
+
+function pickVideo(){
+  let last=-1;
+  try{last=Number(localStorage.getItem('yt_ui_last_video'));}catch(e){}
+  const index=randomIndex(videoOptions.length,Number.isFinite(last)?last:-1);
+  try{localStorage.setItem('yt_ui_last_video',String(index));}catch(e){}
+  return videoOptions[index];
+}
+
+function pickShorts(){
+  const pool=[...shortOptions];
+  for(let i=pool.length-1;i>0;i--){
+    const j=randomIndex(i+1);
+    [pool[i],pool[j]]=[pool[j],pool[i]];
+  }
+  return pool.slice(0,6);
+}
+
+function makeShortCard(item){
+  const card=document.createElement('article');
+  card.className='short-card';
+
+  const placeholder=document.createElement('div');
+  placeholder.className='short-card-placeholder';
+  card.appendChild(placeholder);
+
+  const img=document.createElement('img');
+  img.src=item.image;
+  img.alt=item.title;
+  img.addEventListener('error',()=>{img.style.display='none';});
+  card.appendChild(img);
+
+  const overlay=document.createElement('div');
+  overlay.className='short-card-overlay';
+
+  const more=document.createElement('button');
+  more.className='short-card-more';
+  more.type='button';
+  more.setAttribute('aria-label','More options');
+  more.innerHTML='<span></span><span></span><span></span>';
+  overlay.appendChild(more);
+
+  const play=document.createElement('button');
+  play.className='short-play';
+  play.type='button';
+  play.setAttribute('aria-label','Play short');
+  play.innerHTML='<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path class="shorts-body" d="m18.931 9.99-1.441-.601 1.717-.913a4.48 4.48 0 0 0 1.874-6.078 4.506 4.506 0 0 0-6.09-1.874L4.792 5.929a4.504 4.504 0 0 0-2.402 4.193 4.521 4.521 0 0 0 2.666 3.904c.036.012 1.442.6 1.442.6l-1.706.901a4.51 4.51 0 0 0-2.369 3.967A4.528 4.528 0 0 0 6.93 24c.725 0 1.437-.174 2.08-.508l10.21-5.406a4.494 4.494 0 0 0 2.39-4.192 4.525 4.525 0 0 0-2.678-3.904ZM9.597 15.19V8.824l6.007 3.184z"/><path class="shorts-play" d="M9.597 15.19V8.824l6.007 3.184z"/></svg>';
+  overlay.appendChild(play);
+
+  const text=document.createElement('p');
+  text.className='short-card-text';
+  text.textContent=item.title;
+  overlay.appendChild(text);
+
+  card.appendChild(overlay);
+  return card;
+}
+
+function render(){
+  const video=pickVideo();
+  const hero=document.getElementById('hero-video');
+  hero.poster=video.image;
+  hero.src=video.video;
+  hero.muted=true;
+  hero.autoplay=true;
+  hero.playsInline=true;
+
+  document.getElementById('duration-indicator').textContent='0:00';
+
+  hero.load();
+  const playPromise=hero.play();
+  if(playPromise && typeof playPromise.catch==='function'){
+    playPromise.catch(()=>{});
+  }
+  document.getElementById('video-title').textContent=video.title;
+  document.getElementById('video-secondary').textContent=video.meta;
+
+  const grid=document.getElementById('shorts-grid');
+  grid.innerHTML='';
+  pickShorts().forEach(item=>grid.appendChild(makeShortCard(item)));
+}
+
+document.addEventListener('DOMContentLoaded',render);
+</script>
+
+<script>
+(function(){
+  const video = document.getElementById('hero-video');
+  const timeDisplay = document.getElementById('duration-indicator');
+  const progress = document.querySelector('.progress-active');
+  const knob = document.querySelector('.progress-knob');
+
+
+  function formatTime(totalSeconds){
+    const seconds = Math.max(0, Math.floor(totalSeconds));
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return minutes + ':' + String(secs).padStart(2, '0');
+  }
+
+  function updatePlaybackUI(){
+    const current = Number.isFinite(video.currentTime)
+      ? Math.max(0, video.currentTime)
+      : 0;
+
+    const duration = Number.isFinite(video.duration) && video.duration > 0
+      ? video.duration
+      : 0;
+
+    const ratio = duration > 0
+      ? Math.min(1, current / duration)
+      : 0;
+
+    timeDisplay.textContent = formatTime(current);
+
+    progress.style.width = (ratio * 100) + '%';
+
+    if (knob) {
+      knob.style.right = '-7px';
+      knob.style.display = ratio > 0 ? 'block' : 'none';
+    }
+  }
+
+  function startMutedAutoplay(){
+    video.muted = true;
+    video.defaultMuted = true;
+    video.autoplay = true;
+    video.playsInline = true;
+
+    const playAttempt = video.play();
+    if (playAttempt && typeof playAttempt.catch === 'function') {
+      playAttempt.catch(function(){});
+    }
+  }
+
+  video.addEventListener('loadedmetadata', updatePlaybackUI);
+  video.addEventListener('timeupdate', updatePlaybackUI);
+  video.addEventListener('play', updatePlaybackUI);
+  video.addEventListener('pause', updatePlaybackUI);
+  video.addEventListener('ended', updatePlaybackUI);
+
+  updatePlaybackUI();
+
+  // Try immediately and again after the page becomes visible.
+  startMutedAutoplay();
+  document.addEventListener('visibilitychange', function(){
+    if (!document.hidden && video.paused) {
+      startMutedAutoplay();
+    }
+  });
+})();
+</script>
+</body>
+</html>
