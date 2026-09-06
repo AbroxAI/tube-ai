@@ -1,6 +1,6 @@
 {
-  "name": "YouTube",
-  "short_name": "YouTube",
+  "name": "youtube",
+  "short_name": "youtube",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#0F0F0F",
